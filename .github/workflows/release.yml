@@ -1,0 +1,24 @@
+name: Release checkpoint to HuggingFace Hub
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  push-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -e . huggingface_hub
+      - name: Export and push checkpoint
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Requires CHECKPOINT_PATH to point at a trained checkpoint made
+          # available to the runner (e.g. downloaded from GCS as a prior step).
+          # python scripts/export_to_hf.py --checkpoint $CHECKPOINT_PATH --repo_id imal1uqhr/ada-nano-v45
+          echo "Wire this up once a trained checkpoint exists."

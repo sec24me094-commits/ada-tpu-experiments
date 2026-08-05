@@ -1,0 +1,44 @@
+# ADA-Small — reference config, ~300M parameters (Phase 3 scaling study).
+name: ada-small
+
+vocab_size: 32000
+hidden_dim: 1024
+num_layers: 18
+max_seq_len: 2048
+
+use_ssm: true
+ssm_state_dim: 128
+ssm_num_heads: 8
+ssm_head_dim: 128
+ssm_conv_kernel: 4
+
+use_moe: true
+moe_num_experts: 8
+moe_top_k: 2
+moe_expert_hidden_mult: 2.0
+lambda_balance: 0.01
+
+use_dynamic_sparse_attn: true
+num_query_heads: 16
+num_kv_heads: 4
+attn_sparsity_target: 0.5
+
+use_adaptive_depth: true
+depth_controller_hidden: 128
+depth_budget_tau: 0.75
+lambda_depth: 0.01
+
+dropout: 0.0
+initializer_range: 0.02
+
+learning_rate: 2.5e-4
+min_learning_rate: 2.5e-5
+weight_decay: 0.1
+adam_beta1: 0.9
+adam_beta2: 0.95
+warmup_steps: 1000
+batch_size_tokens: 524288
+micro_batch_size: 8
+training_tokens: 15000000000
+grad_clip: 1.0
+seed: 0

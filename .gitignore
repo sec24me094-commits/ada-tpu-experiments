@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data & checkpoints (large, don't commit)
+checkpoints/
+data/raw/
+data/tokenized/
+*.ckpt
+*.pt
+*.bin
+*.safetensors
+
+# Logs
+wandb/
+logs/
+*.log
+
+# TPU / XLA
+*.xla_dump/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env

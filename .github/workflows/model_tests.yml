@@ -1,0 +1,15 @@
+name: Model forward-pass tests
+
+on: [push, pull_request]
+
+jobs:
+  forward-pass:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -e .
+      - name: Fast shape-only forward pass check
+        run: pytest tests/test_model_forward.py -v --timeout=60

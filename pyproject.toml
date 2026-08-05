@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ada"
+version = "0.1.0"
+description = "Adaptive Depth Architecture (ADA): a hybrid Mamba-2 SSD + MoE + Dynamic Sparse GQA language model with per-token adaptive compute depth."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Vimal Kumar D S" }]
+keywords = [
+    "language models",
+    "state space models",
+    "mixture of experts",
+    "adaptive computation",
+    "efficient transformers",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "einops>=0.7.0",
+    "transformers>=4.40.0",
+    "datasets>=2.18.0",
+    "tokenizers>=0.15.0",
+    "wandb>=0.16.0",
+    "omegaconf>=2.3.0",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-timeout>=2.2.0",
+    "ruff>=0.4.0",
+    "mypy>=1.8.0",
+]
+tpu = [
+    "torch-xla>=2.0.0",
+]
+gpu = [
+    "triton>=2.1.0",
+]
+
+[project.urls]
+Repository = "https://github.com/sec24me094-commits/ada-tpu-experiments"
+
+[tool.setuptools.packages.find]
+include = ["ada*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

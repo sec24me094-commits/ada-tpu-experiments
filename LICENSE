@@ -1,0 +1,17 @@
+Apache License 2.0
+
+This project is licensed under the Apache License, Version 2.0.
+
+The full, authoritative license text is maintained by the Apache Software
+Foundation and is available at:
+    https://www.apache.org/licenses/LICENSE-2.0.txt
+
+EASIEST WAY TO POPULATE THIS FILE CORRECTLY:
+When you create/edit this repository on GitHub, use
+"Add file -> Create new file" -> name it LICENSE -> GitHub will offer a
+"Choose a license template" button. Select "Apache License 2.0" and GitHub
+will insert the full, correct license text automatically with your name
+and year filled in. Commit that in place of this placeholder before you
+make the repository public.
+
+Copyright 2026 Vimal Kumar D S

@@ -1,0 +1,46 @@
+# Transformer-Nano baseline — matched parameter count to ada_nano.yaml, but
+# SSM off, MoE off (dense FFN), dense (non-sparse) GQA, fixed depth.
+# This is the "Transformer Baseline" row of the ablation matrix.
+name: transformer-nano-baseline
+
+vocab_size: 32000
+hidden_dim: 768
+num_layers: 12
+max_seq_len: 2048
+
+use_ssm: false
+ssm_state_dim: 128
+ssm_num_heads: 8
+ssm_head_dim: 96
+ssm_conv_kernel: 4
+
+use_moe: false
+moe_num_experts: 8
+moe_top_k: 2
+moe_expert_hidden_mult: 4.0
+lambda_balance: 0.0
+
+use_dynamic_sparse_attn: false
+num_query_heads: 12
+num_kv_heads: 4
+attn_sparsity_target: 0.5
+
+use_adaptive_depth: false
+depth_controller_hidden: 128
+depth_budget_tau: 1.0
+lambda_depth: 0.0
+
+dropout: 0.0
+initializer_range: 0.02
+
+learning_rate: 3.0e-4
+min_learning_rate: 3.0e-5
+weight_decay: 0.1
+adam_beta1: 0.9
+adam_beta2: 0.95
+warmup_steps: 500
+batch_size_tokens: 262144
+micro_batch_size: 8
+training_tokens: 5000000000
+grad_clip: 1.0
+seed: 0

@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use ADA in your research, please cite this work."
+type: software
+title: "Adaptive Depth Architecture (ADA)"
+version: "4.5"
+date-released: "2026"
+authors:
+  - family-names: "Kumar D S"
+    given-names: "Vimal"
+    affiliation: "Sri Sairam Engineering College"
+url: "https://github.com/sec24me094-commits/ada-tpu-experiments"
+repository-code: "https://github.com/sec24me094-commits/ada-tpu-experiments"
+keywords:
+  - language models
+  - state space models
+  - mixture of experts
+  - adaptive computation
+  - efficient transformers
+license: Apache-2.0
