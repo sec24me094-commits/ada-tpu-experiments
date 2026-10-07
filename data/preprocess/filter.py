@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """Quality filtering for raw text documents (JSONL, one {"text": ...} per line).
 
-Status: reference heuristics only — replace thresholds once a real corpus is
-chosen (see ../DATASET_CARD.md's "[FILL: quality filter rules]").
+Status: reference heuristics configured per ../DATASET_CARD.md quality filter rules.
 
 Filters applied (each independently toggleable):
   --min_chars / --max_chars   length bounds

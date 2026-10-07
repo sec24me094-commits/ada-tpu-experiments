@@ -15,6 +15,7 @@ venv/
 
 # Jupyter
 .ipynb_checkpoints/
+Copy_of_*.ipynb
 
 # Data & checkpoints (large, don't commit)
 checkpoints/

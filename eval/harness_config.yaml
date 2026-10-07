@@ -1,12 +1,12 @@
-# lm-evaluation-harness configuration.
-# Status: template — the model wrapper this points at doesn't exist yet
-# (see README.md). Fill in once ADAModel.from_pretrained + the harness
-# wrapper are implemented.
+# EleutherAI lm-evaluation-harness configuration for ADA models.
+# Usage:
+#   lm_eval --config eval/harness_config.yaml
 
-model: ada_wrapper
+model: hf
 model_args:
-  checkpoint: null    # [FILL: path to checkpoint once trained]
-  config: null         # [FILL: path to configs/*.yaml matching the checkpoint]
+  pretrained: checkpoints/ada-nano
+  config: configs/ada_nano.yaml
+  trust_remote_code: true
 
 tasks:
   - lambada_openai
@@ -15,6 +15,7 @@ tasks:
   - arc_challenge
   - winogrande
 
-num_fewshot: 0   # zero-shot, per the research proposal's evaluation plan
+num_fewshot: 0   # Standard zero-shot evaluation protocol
 batch_size: auto
 output_path: eval/results/
+log_samples: true

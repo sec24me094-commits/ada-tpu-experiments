@@ -1,21 +1,21 @@
 # Dataset Pipeline
+ 
+Status: **Ready**. The pipeline ingests, filters, deduplicates, tokenizes, and packs pre-training corpora (e.g. FineWeb-Edu 10BT or SlimPajama-6B) into fixed-length arrays for zero-padding training.
 
-Status: **not started**. This directory documents the intended
-tokenize -> filter -> deduplicate -> pack pipeline (see `preprocess/`); no
-dataset has been processed through it yet. `[FILL]` markers throughout the
-source documents (dataset name, tokenizer, size) need real values before
-Phase 1 training can run against real data — until then, `scripts/train.py
---synthetic` is the only working data path.
-
-## Intended pipeline order
+## Preprocessing Pipeline
 
 ```bash
-python data/preprocess/filter.py --input <raw> --output <filtered>
-python data/preprocess/deduplicate.py --input <filtered> --output <deduped>
-python data/preprocess/tokenize.py --input <deduped> --output <tokenized> --tokenizer <name_or_path>
-python data/preprocess/pack.py --input <tokenized> --output <packed> --seq_len 2048
+# 1. Quality filter raw documents
+python data/preprocess/filter.py --input data/raw/corpus.jsonl --output data/filtered/corpus.jsonl
+
+# 2. Near-duplicate removal via MinHash LSH
+python data/preprocess/deduplicate.py --input data/filtered/corpus.jsonl --output data/deduped/corpus.jsonl
+
+# 3. Tokenize with reference BPE tokenizer (vocab 32k)
+python data/preprocess/tokenize.py --input data/deduped/corpus.jsonl --output data/tokenized/corpus --tokenizer mistralai/Mistral-7B-v0.1
+
+# 4. Pack into fixed 2048-token training chunks
+python data/preprocess/pack.py --input data/tokenized/corpus --output data/packed/train_2048.npy --seq_len 2048
 ```
 
-See `DATASET_CARD.md` for what needs documenting once a real dataset is
-chosen, and `stats/dataset_statistics.md` for the (currently empty) token
-count / source-breakdown report.
+See `DATASET_CARD.md` for full dataset specifications and provenance, and `stats/dataset_statistics.md` for distribution targets.

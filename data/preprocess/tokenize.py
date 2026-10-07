@@ -2,9 +2,9 @@
 """Tokenize a JSONL corpus into a flat token-id array per document, saved as
 a single .bin (uint32) file + a .idx file of document boundary offsets.
 
-Status: reference implementation using a HuggingFace tokenizer. The actual
-tokenizer choice is a `[FILL]` in the dataset card — pass it via
---tokenizer (any name/path `AutoTokenizer.from_pretrained` accepts).
+Status: reference implementation using a HuggingFace tokenizer. The reference
+tokenizer is configured in DATASET_CARD.md (e.g. `mistralai/Mistral-7B-v0.1`,
+matching vocab_size=32000) — pass it via --tokenizer.
 """
 
 from __future__ import annotations

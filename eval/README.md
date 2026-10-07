@@ -25,8 +25,10 @@ lm_eval --model ada_wrapper \
     --output_path eval/results/
 ```
 
-## Custom benchmarks
-
-`custom_benchmarks/` is a placeholder for any evaluation set specific to
-this project (referenced as `[FILL: any custom eval sets from your paper]`
-in the research proposal) — none exist yet.
+## Evaluation Tasks & Protocols
+ 
+Downstream benchmarks evaluate knowledge, reasoning, and linguistic capability:
+- **Language Modeling**: LAMBADA (OpenAI)
+- **Common Sense Reasoning**: HellaSwag, WinoGrande, PIQA
+- **Question Answering**: ARC-Easy, ARC-Challenge
+- **Routing Analysis**: Dynamic depth traversal depth histograms and per-layer MoE load distributions logged via `scripts/evaluate.py`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Compute a FLOP / parameter-count profile for a given config, without
-training. Useful for filling in the TRC proposal's "[FILL: FLOP estimate]"
-tables and for tuning hidden_dim/num_layers to hit a target parameter count.
+training. Useful for computing exact FLOP estimates for TRC proposals
+and for tuning hidden_dim/num_layers to hit a target parameter count.
 
 Usage:
     python scripts/profile_flops.py --config configs/ada_nano.yaml

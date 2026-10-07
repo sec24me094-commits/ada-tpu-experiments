@@ -3,10 +3,9 @@
 `estimate_flops_per_token` uses the standard dense-Transformer approximation
 (~6 * activated_params per token for a forward+backward pass, Kaplan et al.
 2020 / Chinchilla), adjusted for MoE's activated (not total) parameter
-count. This is an estimate for planning/reporting (e.g. filling in the TRC
-proposal's "[FILL: FLOP estimate]" tables) — not a measured value. For a
-measured value, wrap a training step with `torch.profiler` or, on TPU, the
-XLA profiler (see tpu/tpu_profiling.md).
+count. This provides an analytical estimate for compute budgeting and TRC
+proposals. For a measured hardware value, wrap a training step with
+`torch.profiler` or, on TPU, the XLA profiler (see tpu/tpu_profiling.md).
 """
 
 from __future__ import annotations

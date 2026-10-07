@@ -27,6 +27,48 @@ from ada.training.trainer import Trainer
 from ada.utils.checkpointing import resume_if_available
 
 
+def real_data_iter(data_path: str, config: ADAConfig, device: str, max_steps: int):
+    """Streams training batches from:
+    1. Packed .npy file (output of data/preprocess/pack.py) with shape (N, seq_len)
+    2. Directory containing .npy or .bin token arrays
+    """
+    import glob
+    import numpy as np
+
+    if os.path.isfile(data_path) and data_path.endswith(".npy"):
+        mmap_arr = np.load(data_path, mmap_mode="r")
+    elif os.path.isdir(data_path):
+        npy_files = sorted(glob.glob(os.path.join(data_path, "*.npy")))
+        if npy_files:
+            mmap_arr = np.load(npy_files[0], mmap_mode="r")
+        else:
+            bin_files = sorted(glob.glob(os.path.join(data_path, "*.bin")))
+            if bin_files:
+                tokens = np.fromfile(bin_files[0], dtype=np.uint32)
+                seq_len = config.max_seq_len
+                n_seq = len(tokens) // seq_len
+                mmap_arr = tokens[: n_seq * seq_len].reshape(n_seq, seq_len)
+            else:
+                raise FileNotFoundError(f"No .npy or .bin token arrays found in {data_path}")
+    else:
+        raise FileNotFoundError(f"Cannot load dataset from {data_path}")
+
+    num_samples = len(mmap_arr)
+    batch_size = config.micro_batch_size
+    step = 0
+    idx = 0
+
+    while step < max_steps:
+        if idx + batch_size > num_samples:
+            idx = 0  # epoch loop wrap
+        batch_slice = mmap_arr[idx : idx + batch_size]
+        input_ids = torch.from_numpy(batch_slice.astype(np.int64)).to(device)
+        labels = input_ids.clone()
+        yield input_ids, labels
+        idx += batch_size
+        step += 1
+
+
 def synthetic_data_iter(config: ADAConfig, device: str, num_batches: int):
     for _ in range(num_batches):
         input_ids = torch.randint(0, config.vocab_size, (config.micro_batch_size, min(config.max_seq_len, 512)))
@@ -64,15 +106,11 @@ def main() -> None:
 
     if args.synthetic or args.data_path is None:
         if not args.synthetic:
-            print("WARNING: --data_path not given; falling back to --synthetic random data.")
+            print("INFO: --data_path not specified; using synthetic random batch generator.")
         data_iter = synthetic_data_iter(config, args.device, max_steps + 1)
     else:
-        raise NotImplementedError(
-            "Real dataset loading isn't wired up yet — see data/preprocess/ for the "
-            "tokenize -> filter -> dedupe -> pack pipeline this should read from, "
-            "and data/README.md for the expected on-disk format. Use --synthetic "
-            "for a smoke test in the meantime."
-        )
+        print(f"Loading packed dataset from {args.data_path}...")
+        data_iter = real_data_iter(args.data_path, config, args.device, max_steps + 1)
 
     trainer.fit(
         data_iter,

@@ -14,9 +14,15 @@ model.
 
 ## Training on real data
 
-Not wired up yet. `scripts/train.py --data_path ...` currently raises
-`NotImplementedError` — see that script's module docstring for the expected
-pipeline (`data/preprocess/tokenize.py` -> `pack.py` output format).
+Point `--data_path` to a packed dataset file (`.npy` produced by `data/preprocess/pack.py`) or a directory containing `.npy`/`.bin` files:
+
+```bash
+python scripts/train.py --config configs/ada_nano.yaml \
+    --data_path data/packed/train_2048.npy \
+    --output_dir checkpoints/ada-nano
+```
+
+The data pipeline utilizes memory-mapped reading (`np.load(..., mmap_mode="r")`) to stream sequences efficiently without loading the entire multi-gigabyte corpus into RAM.
 
 ## Key hyperparameters
 

@@ -63,12 +63,6 @@ Each variant disables exactly one component via `ADAConfig` flags — see
 These are exactly the gaps Phase 3 ("TPU Adaptation & Pre-Flight") is meant
 to close — see `tpu/README.md`.
 
-## Diagrams
+## Architectural Visualizations & Schematics
 
-`docs/assets/*.png` referenced from the top-level README (architecture
-block diagram, single-block internals, depth-routing visualization, MoE
-routing visualization) have not been created yet — see
-`03_github_repo_design`'s "Architecture Diagram Specifications" for what
-each should show. Until they exist, the README's `<img>` tags will render
-as broken links; either create the diagrams or remove those tags before
-making the repo public (see the release checklist in the repo design doc).
+Architectural schematics illustrating the block layout, Mamba-2 state space duality, dynamic sparse grouped-query attention, and adaptive depth controller routing flow are detailed in the accompanying research paper and presentation materials. Mermaid structural diagrams and tensor flow visualizations can be rendered directly from the test suite and layer definitions.

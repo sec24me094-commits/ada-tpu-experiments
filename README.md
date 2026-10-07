@@ -1,212 +1,224 @@
-# ADA: Adaptive Depth Architecture for TPU Experiments
+# Adaptive Depth Architecture (ADA)
 
-Adaptive Depth Architecture (ADA) is a research-oriented language model implementation designed around a hybrid stack of:
+<p align="center">
+  <a href="https://github.com/sec24me094-commits/ada-tpu-experiments/actions"><img src="https://github.com/sec24me094-commits/ada-tpu-experiments/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"/></a>
+  <img src="https://img.shields.io/badge/Python-3.11+-3776ab.svg" alt="Python"/>
+  <img src="https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg" alt="PyTorch"/>
+</p>
 
-- Mamba-2 state-space modeling for long-context sequence mixing
-- sparse Mixture-of-Experts (MoE) routing for conditional compute
-- dynamic sparse grouped-query attention
-- adaptive per-token depth control
+ADA (Adaptive Depth Architecture) is a hybrid language model architecture
+that combines Mamba-2 State Space Duality, Mixture-of-Experts sparse
+routing, and Dynamic Sparse Grouped Query Attention under a unified
+adaptive depth controller. ADA dynamically allocates computation per
+token — routing simple tokens through fewer layers and complex tokens
+through more — with the goal of better perplexity per training FLOP than
+fixed-depth Transformer baselines.
 
-The project is structured as a TPU-focused experimental codebase for exploring efficient large-model training and routing behavior in a Cloud TPU environment.
+**Status: v0.1 scaffold.** The architecture is implemented in PyTorch and
+passes unit tests (forward pass, backward pass, all ablation-variant
+combinations) on CPU with small configs. It has **not** been trained at
+any real scale, adapted for TPU/XLA, or validated experimentally — that is
+the work this repository exists to do next. See
+[Known Scope Limitations](#known-scope-limitations) before assuming any
+number below is a real result.
 
-## Project status
+## Table of Contents
+- [Why ADA](#why-ada)
+- [Architecture](#architecture)
+- [Known Scope Limitations](#known-scope-limitations)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Training](#training)
+- [Inference](#inference)
+- [Experiments](#experiments)
+- [Repository Layout](#repository-layout)
+- [Roadmap](#roadmap)
+- [Citation](#citation)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-This repository is a research prototype and experimental scaffold. The core model architecture and training harness are implemented, but several TPU-specific and data pipeline components remain under active development.
+## Why ADA
 
-Current status highlights:
+Standard language models apply identical compute to every token in every
+layer. This is an allocation inefficiency: "the" does not require the same
+reasoning depth as a rare technical term or a long-range coreference.
 
-- Architecture and training loop are in place
-- Synthetic training works as a smoke test
-- Real dataset pipeline is not yet complete
-- Real TPU execution is not yet validated on hardware
-- Model checkpoint export/loading is not fully implemented yet
+| Problem | Solution | ADA Component |
+|---|---|---|
+| O(n²) global attention cost | Selective state spaces | Mamba-2 SSD |
+| Fixed parameter activation | Sparse expert routing | MoE |
+| Uniform local attention compute | Input-dependent sparsity | Dynamic Sparse GQA |
+| Fixed processing depth per token | Per-token routing | Adaptive Depth Controller |
 
-This repo is best understood as an implementation and research platform for the ADA roadmap, not yet as a fully productionized training stack.
+ADA integrates all four into a single architecture. The central research
+question — whether combining them produces efficiency advantages beyond
+the sum of the parts — is what the experiments in this repo are designed
+to answer, once TPU resources are available (see the TRC application
+materials this repo was scaffolded from).
 
-## Why ADA?
+## Architecture
 
-Transformer attention has quadratic scaling in sequence length, which becomes costly for long-context training and inference. ADA combines the efficiency of Mamba-2 recurrence with the conditional computation of MoE routing and sparse attention masks to pursue a more scalable hybrid architecture.
+An ADA model is `embedding -> N x ADA Block -> output head`. Each block
+runs three sublayers in sequence — Mamba-2 SSD, MoE, Dynamic Sparse GQA —
+followed by an Adaptive Depth Controller that decides whether each token
+continues to the next block or exits early. See
+[`docs/architecture.md`](docs/architecture.md) for the full writeup,
+including the training objective and the ablation matrix.
 
-The design is intended to explore:
-
-- sub-quadratic sequence mixing with SSMs
-- sparse expert activation for improved compute efficiency
-- adaptive depth gating to reduce unnecessary compute
-- TPU-friendly execution patterns and XLA compatibility
-
-## Architecture overview
-
-The model follows the pattern:
-
-```text
-input tokens -> embedding -> N x ADAHybridBlock -> final norm -> language-model head
+```
+L_total = L_LM + lambda_depth * L_depth + lambda_balance * L_balance
 ```
 
-Each hybrid block contains:
+## Known Scope Limitations
 
-1. Mamba-2 SSD layer
-2. MoE layer
-3. dynamic sparse GQA attention layer
-4. adaptive depth controller
+This is a first, CPU-testable reference implementation, not a
+performance-tuned one. Specifically:
 
-The repo also includes ablation configurations to evaluate the effect of removing or replacing individual pieces of the architecture.
+- **Mamba-2 SSD** (`ada/layers/mamba2_ssd.py`) uses a sequential Python-loop
+  scan — correct, but not the chunked/parallel-scan formulation Mamba-2
+  needs for real training throughput.
+- **MoE** (`ada/layers/moe.py`) is dense-compute (every expert runs on
+  every token, then masked) rather than true sparse dispatch — correct,
+  but doesn't reflect the per-device memory profile real MoE training
+  needs.
+- **Adaptive depth** computes correct per-token routing decisions, but
+  does not yet skip compute for exited tokens at inference — see
+  `ada/model.py`'s module docstring.
+- **Real data loading** is wired up in `scripts/train.py` (`--data_path`) to stream memory-mapped packed token arrays (`.npy`/`.bin`), with full dataset specifications defined in `data/DATASET_CARD.md`.
+- **TPU/XLA adaptation** (`tpu/`) provides PyTorch/XLA VM launcher and adapter stubs, prepared for execution upon TRC hardware allocation.
 
-See:
-
-- `docs/architecture.md` for the architecture design and known limitations
-- `ada/model.py` for the model forward pass
-- `ada/layers/` for the block implementations
-- `configs/` for concrete experiment configuration files
-
-## Repository layout
-
-```text
-ada-tpu-experiments/
-├── ada/                     # core model implementation
-│   ├── layers/              # Mamba-2, MoE, attention, depth-routing components
-│   ├── routing/             # routing and mask logic
-│   ├── training/            # training logic and objectives
-│   ├── utils/               # checkpointing, logging, profiling
-│   ├── config.py            # model config
-│   └── model.py             # ADAModel entry point
-├── configs/                 # YAML experiment configs
-├── data/                    # dataset card and preprocessing pipeline stubs
-├── docs/                    # architecture and training guidance docs
-├── eval/                    # evaluation harness and benchmark layout
-├── experiments/             # phased experiment scripts and expected outputs
-├── notebooks/               # architecture and routing notebooks
-├── scripts/                 # training, evaluation, export, profiling scripts
-├── tests/                   # unit tests for key components
-├── tpu/                     # TPU setup and XLA adaptation scaffolding
-├── LICENSE
-├── README.md
-├── pyproject.toml
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── CITATION.cff
-└── .github/
-```
+None of this blocks development — CI runs the real test suite against
+these modules — but don't treat a `--synthetic` training run or the
+reference config sizes as validated results.
 
 ## Installation
 
-This project targets Python 3.11+ and installs as a standard package.
+### Requirements
+- Python 3.11+
+- PyTorch 2.0+
+- CUDA 11.8+ (GPU) or PyTorch/XLA (TPU)
 
+### From Source
 ```bash
-git clone https://github.com/sec24me094-commits/ada-tpu-experiments.git
+git clone https://github.com/sec24me094-commits/ada-tpu-experiments
 cd ada-tpu-experiments
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
 pip install -e .
 ```
 
-Optional extras:
-
+### With Development Dependencies
 ```bash
-pip install -e .[tpu]
-pip install -e .[gpu]
-pip install -e .[dev]
+pip install -e ".[dev]"
 ```
 
-## Quick start
-
-The repository currently supports a synthetic smoke-test training path while real data and TPU execution are being prepared.
-
+### For TPU
 ```bash
-python scripts/train.py \
-  --config configs/ada_nano.yaml \
-  --output_dir checkpoints/ada-nano \
-  --synthetic
+pip install -e ".[tpu]"
+# See tpu/README.md for TPU VM setup
 ```
 
-This launches the training harness with random data to validate the flow end-to-end without a full dataset.
+## Quick Start
 
-## Training and evaluation
+```python
+from ada import ADAModel, ADAConfig
 
-The training entry point expects either:
+config = ADAConfig.from_yaml("configs/ada_nano.yaml")
+model = ADAModel(config)
 
-- a real packed dataset via `--data_path`, or
-- `--synthetic` for smoke tests
+print(f"Total parameters: {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
 
-Example:
+import torch
+input_ids = torch.randint(0, config.vocab_size, (2, 512))  # batch=2, seq_len=512
+output = model(input_ids, return_routing_stats=True)
 
-```bash
-python scripts/train.py \
-  --config configs/ada_nano.yaml \
-  --data_path /path/to/tokenized/dataset \
-  --output_dir checkpoints/ada-nano
+print(output.logits.shape)  # (2, 512, vocab_size)
+print(f"Mean routing depth: {output.depth_stats['mean_depth']:.2f} / {config.num_layers}")
 ```
 
-The repo also includes:
-
-- `scripts/evaluate.py` for model-specific evaluation metrics
-- `eval/harness_config.yaml` for downstream benchmark configuration
-- `experiments/` for phase-based validation and ablation workflows
-
-## TPU roadmap
-
-The TPU work is intentionally documented as staged and incomplete. The `tpu/` directory includes setup and adaptation scaffolding for Cloud TPU workflows, but it is not yet a verified runtime deployment.
-
-The planned progression includes:
-
-1. XLA/PyTorch compatibility for `ADAModel`
-2. static-shape adaptation and tracing cleanup
-3. BF16 and distributed training setup
-4. GCS-backed streaming data pipeline
-5. TPU pre-flight and scaling validation
-
-See:
-
-- `tpu/README.md`
-- `docs/training_guide.md`
-- `docs/inference_guide.md`
-
-## Data pipeline
-
-The repository includes a preprocessing pipeline intended for real training data, but that pipeline is not yet active against real dataset material.
-
-Expected order:
-
+Check any config's actual parameter count and estimated FLOPs (safe to run
+on any machine — builds on torch's `meta` device, no real memory
+allocated) with:
 ```bash
-python data/preprocess/filter.py --input <raw> --output <filtered>
-python data/preprocess/deduplicate.py --input <filtered> --output <deduped>
-python data/preprocess/tokenize.py --input <deduped> --output <tokenized> --tokenizer <name_or_path>
-python data/preprocess/pack.py --input <tokenized> --output <packed> --seq_len 2048
+python scripts/profile_flops.py --config configs/ada_nano.yaml
 ```
 
-Documentation for the dataset card and current pipeline expectations lives under:
+## Training
 
-- `data/README.md`
-- `data/DATASET_CARD.md`
+### Smoke test (no real data required)
+```bash
+python scripts/train.py --config configs/ada_nano.yaml \
+    --output_dir checkpoints/ada-nano --synthetic --max_steps 20
+```
+
+### Single-device / multi-GPU / TPU
+See [`docs/training_guide.md`](docs/training_guide.md) for the full set of
+entry points (`scripts/train.py`, `torchrun`, `tpu/distributed_train.py`)
+and [`docs/hyperparameter_guide.md`](docs/hyperparameter_guide.md) for what
+every config field means.
+
+## Inference
+
+`ADAModel.from_pretrained` isn't implemented yet — no checkpoint exists.
+See [`docs/inference_guide.md`](docs/inference_guide.md) for the intended
+API and current status once one does.
 
 ## Experiments
 
-The repo includes a staged experiment plan for benchmarking ADA against baselines.
+Reproduction scripts for all three research phases (architecture
+validation, ablation study, scaling study) live in `experiments/` — see
+[`experiments/README.md`](experiments/README.md). All are currently smoke
+tests against synthetic data pending TPU resource allocation.
 
-- `experiments/phase1_validation` — architecture validation
-- `experiments/phase2_ablation` — ablation matrix
-- `experiments/phase3_scaling` — scaling study
+## Repository Layout
 
-These are scaffolded and designed to become real benchmark drivers once data and TPU access are ready.
+```
+ada-tpu-experiments/
+├── ada/            # Core library (import ada)
+├── scripts/        # Training, eval, export entry points
+├── configs/        # YAML configs for all model sizes + ablations
+├── experiments/    # Reproducible experiment scripts
+├── tpu/            # TPU-specific setup and training (untested)
+├── data/           # Dataset preprocessing pipeline
+├── eval/           # Evaluation harness configuration
+├── docs/           # Architecture docs and guides
+├── tests/          # Unit and integration tests
+└── notebooks/      # Interactive walkthroughs (placeholders)
+```
 
-## Development and contribution
+## Roadmap
 
-Contributions are welcome in the form of architecture improvements, TPU integration work, evaluation additions, bug fixes, and experiment validation.
+### v0.1 — Current
+- [x] Core ADA architecture implementation (Mamba-2 SSD + MoE + Dynamic
+      Sparse GQA + Adaptive Depth), CPU-testable
+- [x] PyTorch training loop with routing analytics
+- [x] Unit test suite (18 tests, all ablation combinations)
+- [x] Real dataset loading & streaming pipeline (`data/preprocess/` + FineWeb-Edu specification)
+- [ ] TPU/XLA hardware validation (PyTorch/XLA adapter) — pending TRC allocation
+- [ ] ADA-Nano validation run
+- [ ] Ablation study (6 variants)
+- [ ] ADA-Small and ADA-Base scaling study
 
-Please review:
-
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-- repository workflow files in `.github/workflows/`
-
-## License
-
-This project is available under the Apache 2.0 License. See the `LICENSE` file for details.
+### Long-term
+- [ ] JAX/Flax implementation for native TPU performance
+- [ ] Chunked/parallel-scan Mamba-2 SSD kernel
+- [ ] Inference-time compute-skipping for adaptive depth
+- [ ] Extended context length with hierarchical SSM routing
 
 ## Citation
 
-The repository includes `CITATION.cff` for attribution guidance.
+If you use ADA in your research, see [`CITATION.cff`](CITATION.cff).
 
-## Summary
+## License
 
-ADA is a research-first hybrid language model codebase that brings together Mamba-2, MoE, sparse attention, and adaptive depth in a TPU-oriented design. It is a strong foundation for experimentation and iteration, but it is still explicitly in the prototype and roadmap stage rather than a fully validated production model stack.
+Apache License 2.0 — see [`LICENSE`](LICENSE).
+
+## Acknowledgements
+
+This research is conducted independently at Sri Sairam Engineering
+College, Chennai, India. Compute resources for experimental validation
+requested from Google TPU Research Cloud (TRC).
+
+ADA builds on ideas from:
+- Mamba-2 — Dao & Gu (2024)
+- EleutherAI lm-evaluation-harness — evaluation framework
+- HuggingFace Transformers — model hub integration
