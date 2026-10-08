@@ -1,0 +1,11 @@
+{
+  "id": "vijay1000000/ada-tpu-pretraining",
+  "title": "ADA TPU Pretraining",
+  "code_file": "kaggle_ada_tpu_pretraining.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "true",
+  "enable_internet": "true"
+}
